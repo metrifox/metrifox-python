@@ -73,17 +73,19 @@ class BaseClient:
             return response.json()
 
         except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code if e.response else None
+            status_code = e.response.status_code if e.response is not None else None
+            response_body = e.response.text if e.response is not None else None
+
             try:
-                error_body = e.response.json() if e.response else None
+                error_body = e.response.json() if e.response is not None else None
                 error_message = error_body.get('message', str(e)) if error_body else str(e)
-            except:
+            except Exception as json_err:
                 error_message = str(e)
 
             raise APIError(
                 message=f"API request failed: {error_message}",
                 status_code=status_code,
-                response_body=e.response.text if e.response else None
+                response_body=response_body
             )
 
         except requests.exceptions.RequestException as e:
