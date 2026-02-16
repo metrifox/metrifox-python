@@ -294,6 +294,35 @@ config = CheckoutConfig(
 checkout_url = client.checkout.url(config)
 ```
 
+## Subscriptions
+
+### Billing History
+
+Retrieve the billing history for a subscription:
+
+```python
+history = client.subscriptions.get_billing_history("subscription_uuid")
+print(history['data'])
+```
+
+### Entitlements Summary
+
+Get a summary of entitlements for a subscription:
+
+```python
+summary = client.subscriptions.get_entitlements_summary("subscription_uuid")
+print(summary['data'])
+```
+
+### Entitlements Usage
+
+Get detailed entitlements usage for a subscription:
+
+```python
+usage = client.subscriptions.get_entitlements_usage("subscription_uuid")
+print(usage['data'])
+```
+
 ## Error Handling
 
 The SDK provides custom exceptions for different error scenarios:
@@ -487,6 +516,11 @@ if __name__ == '__main__':
 **Usages Module (`client.usages`):**
 - `check_access(request)` - Check feature access
 - `record_usage(request)` - Record a usage event
+
+**Subscriptions Module (`client.subscriptions`):**
+- `get_billing_history(subscription_id)` - Get billing history for a subscription
+- `get_entitlements_summary(subscription_id)` - Get entitlements summary
+- `get_entitlements_usage(subscription_id)` - Get entitlements usage
 
 **Checkout Module (`client.checkout`):**
 - `url(config)` - Generate a checkout URL
