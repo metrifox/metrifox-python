@@ -537,6 +537,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/metrif
 
 The SDK is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
+
 ## Support
 
 For support, contact [support@metrifox.com](mailto:support@metrifox.com) or visit our [documentation](https://docs.metrifox.com).
