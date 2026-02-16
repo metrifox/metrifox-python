@@ -8,6 +8,7 @@ from .base import BaseClient
 from .customers import CustomersModule
 from .usages import UsagesModule
 from .checkout import CheckoutModule
+from .subscriptions import SubscriptionsModule
 from .exceptions import ConfigurationError
 
 
@@ -87,6 +88,7 @@ class MetrifoxClient:
         self._customers_module = CustomersModule(self._main_client)
         self._usages_module = UsagesModule(self._main_client, self._meter_client)
         self._checkout_module = CheckoutModule(self._main_client)
+        self._subscriptions_module = SubscriptionsModule(self._main_client)
 
     @staticmethod
     def _get_api_key_from_environment() -> Optional[str]:
@@ -107,6 +109,11 @@ class MetrifoxClient:
     def checkout(self) -> CheckoutModule:
         """Access the checkout module"""
         return self._checkout_module
+
+    @property
+    def subscriptions(self) -> SubscriptionsModule:
+        """Access the subscriptions module"""
+        return self._subscriptions_module
 
 
 def init(config: Optional[Dict[str, Any]] = None) -> MetrifoxClient:
