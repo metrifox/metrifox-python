@@ -5,6 +5,7 @@ A Python SDK for interacting with the Metrifox platform API.
 
 from .client import MetrifoxClient, init
 from .exceptions import MetrifoxError, APIError, ConfigurationError
+from .subscriptions import SubscriptionsModule
 from .types import (
     CustomerCreateRequest,
     CustomerUpdateRequest,
@@ -27,4 +28,5 @@ __all__ = [
     "UsageEventRequest",
     "AccessCheckRequest",
     "CheckoutConfig",
+    "SubscriptionsModule",
 ]
