@@ -235,6 +235,33 @@ response = client.customers.delete("customer_123")
 print(response['message'])
 ```
 
+### Bulk Create Customers
+
+Create multiple customers in a single API call:
+
+```python
+result = client.customers.bulk_create([
+    {
+        "customer_key": "customer_001",
+        "customer_type": "BUSINESS",
+        "primary_email": "contact@acme.com",
+        "legal_name": "Acme Corp",
+        "display_name": "Acme"
+    },
+    {
+        "customer_key": "customer_002",
+        "customer_type": "INDIVIDUAL",
+        "primary_email": "jane@example.com",
+        "first_name": "Jane",
+        "last_name": "Doe"
+    }
+])
+
+print(f"Total: {result['data']['total']}")
+print(f"Successful: {result['data']['successful_count']}")
+print(f"Failed: {result['data']['failed_count']}")
+```
+
 ### Bulk Customer Import (CSV)
 
 Upload multiple customers at once using a CSV file:
@@ -321,6 +348,26 @@ Get detailed entitlements usage for a subscription:
 ```python
 usage = client.subscriptions.get_entitlements_usage("subscription_uuid")
 print(usage['data'])
+```
+
+### Bulk Assign Plan
+
+Assign a plan to multiple customers at once:
+
+```python
+result = client.subscriptions.bulk_assign_plan(
+    customer_keys=["customer_001", "customer_002"],
+    plan_key="pro-plan",
+    billing_interval="monthly",          # optional
+    currency_code="USD",                 # optional
+    items=[                              # optional: credit/feature quantities
+        {"credit_key": "api_credits", "quantity": 500}
+    ],
+    skip_invoice=False                   # optional
+)
+
+print(f"Succeeded: {len(result['data']['succeeded'])}")
+print(f"Failed: {len(result['data']['failed'])}")
 ```
 
 ## Error Handling
@@ -512,6 +559,7 @@ if __name__ == '__main__':
 - `delete(customer_key)` - Delete a customer
 - `has_active_subscription(customer_key)` - Check for active subscription
 - `upload_csv(file_path)` - Upload customers via CSV
+- `bulk_create(customers)` - Create multiple customers at once
 
 **Usages Module (`client.usages`):**
 - `check_access(request)` - Check feature access
@@ -521,6 +569,7 @@ if __name__ == '__main__':
 - `get_billing_history(subscription_id)` - Get billing history for a subscription
 - `get_entitlements_summary(subscription_id)` - Get entitlements summary
 - `get_entitlements_usage(subscription_id)` - Get entitlements usage
+- `bulk_assign_plan(customer_keys, plan_key, **options)` - Assign a plan to multiple customers
 
 **Checkout Module (`client.checkout`):**
 - `url(config)` - Generate a checkout URL
