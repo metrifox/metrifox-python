@@ -2,7 +2,7 @@
 Customers module for Metrifox SDK
 """
 
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, List, Union, Optional
 from .base import BaseClient
 from .types import (
     CustomerCreateRequest,
@@ -167,3 +167,38 @@ class CustomersModule:
         with open(file_path, 'rb') as f:
             files = {'csv': (file_path.split('/')[-1], f, 'text/csv')}
             return self._client.post("customers/csv-upload", files=files)
+
+    def bulk_create(self, customers: Union[List[Dict[str, Any]], Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Bulk create multiple customers in a single request
+
+        Args:
+            customers: List of customer data dicts, or a dict with 'customers' key
+
+        Returns:
+            API response with creation results including successful and failed entries
+
+        Example:
+            >>> result = client.customers.bulk_create([
+            ...     {
+            ...         "customer_key": "cust_001",
+            ...         "customer_type": "BUSINESS",
+            ...         "primary_email": "contact@acme.com",
+            ...         "legal_name": "Acme Inc"
+            ...     },
+            ...     {
+            ...         "customer_key": "cust_002",
+            ...         "customer_type": "INDIVIDUAL",
+            ...         "primary_email": "jane@example.com",
+            ...         "first_name": "Jane",
+            ...         "last_name": "Doe"
+            ...     }
+            ... ])
+            >>> print(f"Created: {result['data']['successful_count']}")
+            >>> print(f"Failed: {result['data']['failed_count']}")
+        """
+        if isinstance(customers, list):
+            data = {"customers": customers}
+        else:
+            data = customers
+        return self._client.post("customers/bulk-create", json=data)
