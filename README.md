@@ -85,6 +85,29 @@ response = client.usages.record_usage({
 print(response['message'])  # "Event received"
 ```
 
+### Listing Usage Events
+
+Retrieve usage events with optional filters and pagination:
+
+```python
+# List all events
+events = client.usages.list_events()
+
+# Filter by customer and feature
+events = client.usages.list_events(
+    customer_key="customer_123",
+    feature_key="premium_feature",
+    page=1,
+    per_page=25
+)
+
+for event in events['data']:
+    print(f"{event['feature_key']}: qty={event['quantity']} at {event['timestamp']}")
+
+# Pagination info
+print(f"Page {events['meta']['current_page']} of {events['meta']['total_pages']}")
+```
+
 ### Complete Usage Example
 
 Here's a complete example showing the typical access control + usage recording pattern:
@@ -200,9 +223,9 @@ Retrieve customer information:
 customer = client.customers.get("customer_123")
 print(customer['data'])
 
-# Get detailed customer information (includes usage stats, billing info, etc.)
+# Get detailed customer information (includes subscriptions, wallets, etc.)
 details = client.customers.get_details("customer_123")
-print(details['data']['usage_summary'])
+print(details['data']['subscriptions'])
 
 # List all customers with pagination
 customers = client.customers.list({
@@ -224,6 +247,20 @@ customers = client.customers.list({
 is_active = client.customers.has_active_subscription("customer_123")
 if is_active:
     print("Customer has active subscription")
+```
+
+### Archiving & Unarchiving Customers
+
+Archive customers to soft-delete them, or unarchive to restore:
+
+```python
+# Archive a customer
+result = client.customers.archive("customer_123")
+print(result['data']['archived_at'])  # "2025-09-01T12:00:00.000Z"
+
+# Unarchive a customer
+result = client.customers.unarchive("customer_123")
+print(result['data']['archived_at'])  # None
 ```
 
 ### Deleting Customers
@@ -307,6 +344,20 @@ checkout_url = client.checkout.url({
 print(f"Checkout URL: {checkout_url}")
 ```
 
+### Generate Card Collection URL
+
+Generate a URL to collect card details for an existing subscription or order:
+
+```python
+# For a subscription
+url = client.checkout.card_collection_url(subscription_id="sub_uuid_123")
+
+# For an order
+url = client.checkout.card_collection_url(order_id="order_uuid_456")
+
+print(f"Card collection URL: {url}")
+```
+
 ### Using Type-Safe Dataclasses
 
 ```python
@@ -329,7 +380,8 @@ Retrieve the billing history for a subscription:
 
 ```python
 history = client.subscriptions.get_billing_history("subscription_uuid")
-print(history['data'])
+for item in history['data']:
+    print(f"{item['invoice_number']}: {item['total_amount']} {item['currency']} - {item['status']}")
 ```
 
 ### Entitlements Summary
@@ -338,16 +390,24 @@ Get a summary of entitlements for a subscription:
 
 ```python
 summary = client.subscriptions.get_entitlements_summary("subscription_uuid")
-print(summary['data'])
+for item in summary['data']:
+    print(f"{item['feature_name']}: allowance={item['included_allowance']} model={item['usage_model']}")
 ```
 
 ### Entitlements Usage
 
-Get detailed entitlements usage for a subscription:
+Get detailed entitlements usage with pool breakdowns for a subscription:
 
 ```python
 usage = client.subscriptions.get_entitlements_usage("subscription_uuid")
-print(usage['data'])
+for item in usage['data']:
+    print(f"{item['feature_name']} ({item['type']}):")
+    if item.get('included_pool'):
+        pool = item['included_pool']
+        print(f"  Included: {pool['used']}/{pool['amount']} used (balance: {pool['balance']})")
+    if item.get('pay_as_you_go_pool'):
+        pool = item['pay_as_you_go_pool']
+        print(f"  Pay-as-you-go: {pool['used']} used")
 ```
 
 ### Bulk Assign Plan
@@ -368,6 +428,48 @@ result = client.subscriptions.bulk_assign_plan(
 
 print(f"Succeeded: {len(result['data']['succeeded'])}")
 print(f"Failed: {len(result['data']['failed'])}")
+```
+
+## Wallets
+
+### List Customer Wallets
+
+Retrieve all credit wallets for a customer:
+
+```python
+wallets = client.wallets.list("customer_123")
+for wallet in wallets['data']:
+    print(f"{wallet['name']}: {wallet['balance']} {wallet['credit_unit_plural']}")
+    if wallet.get('topup_link'):
+        print(f"  Top-up: {wallet['topup_link']}")
+```
+
+### List Credit Allocations
+
+Get credit allocations for a specific wallet:
+
+```python
+allocations = client.wallets.list_credit_allocations("wallet_uuid_123")
+for alloc in allocations['data']:
+    print(f"{alloc['allocation_type']}: {alloc['amount']} (consumed: {alloc['consumed']})")
+    if alloc.get('valid_until'):
+        print(f"  Expires: {alloc['valid_until']}")
+
+# Filter by status
+active = client.wallets.list_credit_allocations("wallet_uuid_123", status="active")
+```
+
+### Get a Credit Allocation
+
+Get a single credit allocation with its transaction history:
+
+```python
+allocation = client.wallets.get_credit_allocation("allocation_uuid_123")
+data = allocation['data']
+
+print(f"Amount: {data['amount']}, Consumed: {data['consumed']}")
+for txn in data['transactions']:
+    print(f"  {txn['created_at']}: {txn['amount']} (event: {txn.get('usage_event_id', 'N/A')})")
 ```
 
 ## Error Handling
@@ -396,150 +498,30 @@ except Exception as e:
 
 ## Type Hints and IDE Support
 
-The SDK is fully typed with type hints for better IDE support and type checking:
+The SDK includes TypedDict definitions for all API responses, giving you IDE autocompletion and type checking:
 
 ```python
 from metrifox_sdk import (
     MetrifoxClient,
+    # Request types (dataclasses)
     CustomerCreateRequest,
     CustomerUpdateRequest,
     CustomerListRequest,
     UsageEventRequest,
     AccessCheckRequest,
-    CheckoutConfig
+    CheckoutConfig,
+    # Response types (TypedDicts) for annotation
+    CustomerResponse,
+    CustomerDetailsResponse,
+    AccessResponse,
+    EntitlementUsageItem,
+    WalletResponse,
+    BillingHistoryItemResponse,
 )
 
-# Your IDE will provide autocomplete and type checking
-client: MetrifoxClient = MetrifoxClient(api_key="your_key")
-```
-
-## Examples
-
-### Complete Customer Lifecycle
-
-```python
-from metrifox_sdk import MetrifoxClient
-
-client = MetrifoxClient(api_key="your_api_key")
-
-# 1. Create a customer
-customer = client.customers.create({
-    "customer_key": "cust_demo_123",
-    "customer_type": "INDIVIDUAL",
-    "primary_email": "demo@example.com",
-    "first_name": "Demo",
-    "last_name": "User"
-})
-
-print(f"Created customer: {customer['data']['customer_key']}")
-
-# 2. Check feature access
-access = client.usages.check_access({
-    "feature_key": "premium_feature",
-    "customer_key": "cust_demo_123"
-})
-
-if access['data']['can_access']:
-    # 3. Record usage
-    client.usages.record_usage({
-        "customer_key": "cust_demo_123",
-        "event_name": "feature_used",
-        "event_id": "evt_demo_001",
-        "amount": 1
-    })
-    print("Usage recorded successfully")
-
-# 4. Generate checkout URL
-checkout_url = client.checkout.url({
-    "offering_key": "premium_plan",
-    "customer_key": "cust_demo_123"
-})
-
-print(f"Checkout URL: {checkout_url}")
-
-# 5. Get customer details
-details = client.customers.get_details("cust_demo_123")
-print(f"Customer details: {details['data']}")
-```
-
-### Django Integration
-
-```python
-# settings.py
-METRIFOX_API_KEY = os.getenv('METRIFOX_API_KEY')
-
-# utils/metrifox.py
-from metrifox_sdk import MetrifoxClient
-from django.conf import settings
-
-metrifox_client = MetrifoxClient(api_key=settings.METRIFOX_API_KEY)
-
-# views.py
-from utils.metrifox import metrifox_client
-
-def premium_feature_view(request):
-    customer_key = request.user.customer_key
-
-    access = metrifox_client.usages.check_access({
-        "feature_key": "premium_feature",
-        "customer_key": customer_key
-    })
-
-    if not access['data']['can_access']:
-        return JsonResponse({
-            "error": "Access denied",
-            "balance": access['data']['balance']
-        }, status=403)
-
-    # Process the feature...
-
-    # Record usage
-    metrifox_client.usages.record_usage({
-        "customer_key": customer_key,
-        "event_name": "premium_feature_used",
-        "event_id": f"evt_{request.id}"
-    })
-
-    return JsonResponse({"success": True})
-```
-
-### Flask Integration
-
-```python
-from flask import Flask, jsonify, request
-from metrifox_sdk import MetrifoxClient
-import os
-
-app = Flask(__name__)
-metrifox_client = MetrifoxClient(api_key=os.getenv('METRIFOX_API_KEY'))
-
-@app.route('/api/premium/<customer_id>', methods=['GET'])
-def premium_endpoint(customer_id):
-    # Check access
-    access = metrifox_client.usages.check_access({
-        "feature_key": "premium_api",
-        "customer_key": customer_id
-    })
-
-    if not access['data']['can_access']:
-        return jsonify({
-            "error": "Access denied",
-            "balance": access['data']['balance']
-        }), 403
-
-    # Process request...
-
-    # Record usage
-    metrifox_client.usages.record_usage({
-        "customer_key": customer_id,
-        "event_name": "premium_api_call",
-        "event_id": f"evt_{request.headers.get('X-Request-ID')}"
-    })
-
-    return jsonify({"data": "premium content"})
-
-if __name__ == '__main__':
-    app.run()
+# Annotate for autocompletion
+customer: CustomerResponse = result['data']
+print(customer['customer_key'])  # IDE knows this field exists
 ```
 
 ## API Reference
@@ -547,7 +529,7 @@ if __name__ == '__main__':
 ### Client Methods
 
 **Initialization:**
-- `MetrifoxClient(api_key, base_url, web_app_base_url)` - Initialize the client
+- `MetrifoxClient(api_key, base_url, web_app_base_url, meter_service_base_url)` - Initialize the client
 - `init(config)` - Convenience function to initialize the client
 
 **Customers Module (`client.customers`):**
@@ -557,6 +539,8 @@ if __name__ == '__main__':
 - `get_details(customer_key)` - Get detailed customer information
 - `list(params)` - List customers with pagination and filters
 - `delete(customer_key)` - Delete a customer
+- `archive(customer_key)` - Archive a customer
+- `unarchive(customer_key)` - Unarchive a customer
 - `has_active_subscription(customer_key)` - Check for active subscription
 - `upload_csv(file_path)` - Upload customers via CSV
 - `bulk_create(customers)` - Create multiple customers at once
@@ -564,6 +548,7 @@ if __name__ == '__main__':
 **Usages Module (`client.usages`):**
 - `check_access(request)` - Check feature access
 - `record_usage(request)` - Record a usage event
+- `list_events(customer_key, feature_key, page, per_page)` - List usage events
 
 **Subscriptions Module (`client.subscriptions`):**
 - `get_billing_history(subscription_id)` - Get billing history for a subscription
@@ -573,12 +558,19 @@ if __name__ == '__main__':
 
 **Checkout Module (`client.checkout`):**
 - `url(config)` - Generate a checkout URL
+- `card_collection_url(subscription_id, order_id)` - Generate a card collection URL
+
+**Wallets Module (`client.wallets`):**
+- `list(customer_key)` - List all wallets for a customer
+- `list_credit_allocations(wallet_id, status)` - List credit allocations for a wallet
+- `get_credit_allocation(allocation_id)` - Get a credit allocation with transactions
 
 ## Configuration
 
 ### Environment Variables
 
 - `METRIFOX_API_KEY` - Your Metrifox API key
+- `METRIFOX_METER_SERVICE_BASE_URL` - Custom meter service URL (optional)
 
 ### Custom URLs
 
@@ -586,7 +578,8 @@ if __name__ == '__main__':
 client = MetrifoxClient(
     api_key="your_api_key",
     base_url="https://custom-api.metrifox.com/api/v1/",
-    web_app_base_url="https://custom-app.metrifox.com"
+    web_app_base_url="https://custom-app.metrifox.com",
+    meter_service_base_url="https://custom-meter.metrifox.com/"
 )
 ```
 
