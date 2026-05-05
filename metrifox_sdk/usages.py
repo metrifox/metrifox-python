@@ -2,9 +2,9 @@
 Usages module for Metrifox SDK
 """
 
-from typing import Dict, Any, Union
+from typing import Dict, Any, Optional, Union
 from .base import BaseClient
-from .types import UsageEventRequest, AccessCheckRequest, AccessResponse
+from .types import UsageEventRequest, AccessCheckRequest
 
 
 class UsagesModule:
@@ -77,3 +77,39 @@ class UsagesModule:
             data['quantity'] = data.pop('amount')
 
         return self._meter_client.post("usage/events", json=data)
+
+    def list_events(
+        self,
+        customer_key: Optional[str] = None,
+        feature_key: Optional[str] = None,
+        page: Optional[int] = None,
+        per_page: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List usage events with optional filters and pagination
+
+        Args:
+            customer_key: Filter events by customer key
+            feature_key: Filter events by feature key
+            page: Page number (starts from 1)
+            per_page: Number of records per page (default 25)
+
+        Returns:
+            API response with list of usage events and pagination metadata
+
+        Example:
+            >>> events = client.usages.list_events(customer_key="cust_123")
+            >>> for event in events['data']:
+            ...     print(f"{event['feature_key']}: {event['quantity']} at {event['timestamp']}")
+            >>> print(f"Page {events['meta']['current_page']} of {events['meta']['total_pages']}")
+        """
+        params: Dict[str, Any] = {}
+        if customer_key is not None:
+            params["customer_key"] = customer_key
+        if feature_key is not None:
+            params["feature_key"] = feature_key
+        if page is not None:
+            params["page"] = page
+        if per_page is not None:
+            params["per_page"] = per_page
+        return self._meter_client.get("usage/events", params=params)

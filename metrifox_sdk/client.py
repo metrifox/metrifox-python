@@ -9,6 +9,7 @@ from .customers import CustomersModule
 from .usages import UsagesModule
 from .checkout import CheckoutModule
 from .subscriptions import SubscriptionsModule
+from .wallets import WalletsModule
 from .exceptions import ConfigurationError
 
 
@@ -57,6 +58,7 @@ class MetrifoxClient:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         web_app_base_url: Optional[str] = None,
+        meter_service_base_url: Optional[str] = None,
     ):
         """
         Initialize the Metrifox client
@@ -65,6 +67,7 @@ class MetrifoxClient:
             api_key: Your Metrifox API key. If not provided, will look for METRIFOX_API_KEY env var
             base_url: Custom API base URL (optional)
             web_app_base_url: Custom web app base URL (optional)
+            meter_service_base_url: Custom meter service base URL (optional)
 
         Raises:
             ConfigurationError: If API key is not provided or found in environment
@@ -78,7 +81,7 @@ class MetrifoxClient:
 
         self.base_url = base_url or self.DEFAULT_BASE_URL
         self.web_app_base_url = web_app_base_url or self.DEFAULT_WEB_APP_BASE_URL
-        self.meter_service_base_url = self.METER_SERVICE_BASE_URL
+        self.meter_service_base_url = meter_service_base_url or os.getenv("METRIFOX_METER_SERVICE_BASE_URL") or self.METER_SERVICE_BASE_URL
 
         # Initialize base HTTP clients
         self._main_client = BaseClient(self.api_key, self.base_url)
@@ -89,6 +92,7 @@ class MetrifoxClient:
         self._usages_module = UsagesModule(self._main_client, self._meter_client)
         self._checkout_module = CheckoutModule(self._main_client)
         self._subscriptions_module = SubscriptionsModule(self._main_client)
+        self._wallets_module = WalletsModule(self._main_client)
 
     @staticmethod
     def _get_api_key_from_environment() -> Optional[str]:
@@ -114,6 +118,11 @@ class MetrifoxClient:
     def subscriptions(self) -> SubscriptionsModule:
         """Access the subscriptions module"""
         return self._subscriptions_module
+
+    @property
+    def wallets(self) -> WalletsModule:
+        """Access the wallets module"""
+        return self._wallets_module
 
 
 def init(config: Optional[Dict[str, Any]] = None) -> MetrifoxClient:
@@ -144,5 +153,6 @@ def init(config: Optional[Dict[str, Any]] = None) -> MetrifoxClient:
     return MetrifoxClient(
         api_key=config.get('api_key'),
         base_url=config.get('base_url'),
-        web_app_base_url=config.get('web_app_base_url')
+        web_app_base_url=config.get('web_app_base_url'),
+        meter_service_base_url=config.get('meter_service_base_url'),
     )

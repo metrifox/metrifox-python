@@ -7,7 +7,7 @@ from .base import BaseClient
 from .types import (
     CustomerCreateRequest,
     CustomerUpdateRequest,
-    CustomerListRequest
+    CustomerListRequest,
 )
 
 
@@ -25,7 +25,7 @@ class CustomersModule:
             request: Customer creation data (CustomerCreateRequest or dict)
 
         Returns:
-            API response with created customer data
+            API response with data typed as CustomerResponse
 
         Example:
             >>> customer = client.customers.create({
@@ -35,6 +35,7 @@ class CustomersModule:
             ...     "first_name": "John",
             ...     "last_name": "Doe"
             ... })
+            >>> print(customer['data']['customer_key'])
         """
         data = request.to_dict() if hasattr(request, 'to_dict') else request
         return self._client.post("customers/new", json=data)
@@ -48,7 +49,7 @@ class CustomersModule:
             request: Customer update data (CustomerUpdateRequest or dict)
 
         Returns:
-            API response with updated customer data
+            API response with data typed as CustomerResponse
 
         Example:
             >>> customer = client.customers.update("cust_123", {
@@ -67,26 +68,28 @@ class CustomersModule:
             customer_key: The customer's unique key
 
         Returns:
-            API response with customer data
+            API response with data typed as CustomerResponse
 
         Example:
             >>> customer = client.customers.get("cust_123")
+            >>> print(customer['data']['full_name'])
         """
         return self._client.get(f"customers/{customer_key}")
 
     def get_details(self, customer_key: str) -> Dict[str, Any]:
         """
-        Get detailed customer information including usage stats
+        Get detailed customer information including subscriptions and wallets
 
         Args:
             customer_key: The customer's unique key
 
         Returns:
-            API response with detailed customer data
+            API response with data typed as CustomerDetailsResponse
 
         Example:
             >>> details = client.customers.get_details("cust_123")
-            >>> print(details['data']['usage_summary'])
+            >>> for sub in details['data']['subscriptions']:
+            ...     print(sub['product_name'], sub['status'])
         """
         return self._client.get(f"customers/{customer_key}/details")
 
@@ -101,17 +104,9 @@ class CustomersModule:
             API response with list of customers and pagination metadata
 
         Example:
-            >>> # List all customers
-            >>> customers = client.customers.list()
-            >>>
-            >>> # List with pagination
             >>> customers = client.customers.list({"page": 1, "per_page": 50})
-            >>>
-            >>> # List with filters
-            >>> customers = client.customers.list({
-            ...     "customer_type": "BUSINESS",
-            ...     "search_term": "Acme"
-            ... })
+            >>> for customer in customers['data']:
+            ...     print(customer['customer_key'], customer['primary_email'])
         """
         query_params = params.to_dict() if hasattr(params, 'to_dict') else (params or {})
         return self._client.get("customers", params=query_params)
@@ -130,6 +125,37 @@ class CustomersModule:
             >>> response = client.customers.delete("cust_123")
         """
         return self._client.delete(f"customers/{customer_key}")
+
+    def archive(self, customer_key: str) -> Dict[str, Any]:
+        """
+        Archive a customer
+
+        Args:
+            customer_key: The customer's unique key
+
+        Returns:
+            API response with archived customer data
+
+        Example:
+            >>> result = client.customers.archive("cust_123")
+            >>> print(result['data']['archived_at'])
+        """
+        return self._client.post(f"customers/{customer_key}/archive")
+
+    def unarchive(self, customer_key: str) -> Dict[str, Any]:
+        """
+        Unarchive a customer
+
+        Args:
+            customer_key: The customer's unique key
+
+        Returns:
+            API response with unarchived customer data
+
+        Example:
+            >>> result = client.customers.unarchive("cust_123")
+        """
+        return self._client.post(f"customers/{customer_key}/unarchive")
 
     def has_active_subscription(self, customer_key: str) -> bool:
         """
