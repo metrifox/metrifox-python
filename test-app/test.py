@@ -5,6 +5,11 @@ Run: python3 test.py
 
 import sys
 import os
+import time
+
+# Load .env
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 # Add parent directory to path to import SDK locally
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -13,7 +18,10 @@ sys.path.insert(0, parent_dir)
 from metrifox_sdk import MetrifoxClient
 
 # Initialize the SDK
-client = MetrifoxClient(api_key="....YOUR_API_KEY")
+client = MetrifoxClient(
+    base_url=os.getenv("METRIFOX_BASE_URL"),
+    meter_service_base_url=os.getenv("METRIFOX_METER_SERVICE_BASE_URL"),
+)
 
 print("="*60)
 print("METRIFOX SDK TEST")
@@ -28,7 +36,6 @@ for customer in result['data']:
 
 # Test 2: Create a customer
 print("\n2. Create a customer:")
-import time
 new_customer = client.customers.create({
     "customer_key": f"test_{int(time.time())}",
     "customer_type": "INDIVIDUAL",
@@ -46,18 +53,24 @@ print(f"   Name: {customer['data'].get('first_name', 'N/A')}")
 
 # Test 4: Check feature access
 print("\n4. Check feature access:")
-access = client.usages.check_access({
-    "feature_key": "premium_feature",
-    "customer_key": customer_key
-})
-print(f"   Can access: {access['data']['can_access']}")
-print(f"   Balance: {access['data']['balance']}")
-print(f"   Message: {access['data']['message']}")
+try:
+    access = client.usages.check_access({
+        "feature_key": "premium_feature",
+        "customer_key": customer_key
+    })
+    print(f"   Can access: {access['data']['can_access']}")
+    print(f"   Balance: {access['data']['balance']}")
+    print(f"   Message: {access['data']['message']}")
+except Exception as e:
+    print(f"   ✗ {e}")
 
 # Test 5: Generate checkout URL
 print("\n5. Generate checkout URL:")
-url = client.checkout.url({"offering_key": "premium_plan"})
-print(f"   URL: {url}")
+try:
+    url = client.checkout.url({"offering_key": "premium_plan"})
+    print(f"   URL: {url}")
+except Exception as e:
+    print(f"   ✗ {e}")
 
 # Test 6: Record a usage event
 print("\n6. Record a usage event:")
@@ -65,19 +78,64 @@ try:
     usage_event = client.usages.record_usage({
         "feature_key": "premium_feature",
         "customer_key": customer_key,
+        "event_id": f"evt_{int(time.time())}",
         "quantity": 1,
-        "timestamp": int(time.time())
+        "timestamp": int(time.time() * 1000)
     })
-    print(f"   Recorded event ID: {usage_event['data']['event_id']}")
+    print(f"   Recorded: {usage_event['data']}")
 except Exception as e:
-    print(f"   ✗ Error: {e}")
-    if hasattr(e, 'response_body') and e.response_body:
-        print(f"   ✗ API Response: {e.response_body}")
+    print(f"   ✗ {e}")
 
-# Test 7: Delete test customer (cleanup)
-print(f"\n7. Cleanup - delete {customer_key}:")
+# Test 7: List usage events
+print("\n7. List usage events:")
+try:
+    events = client.usages.list_events(per_page=3)
+    print(f"   Found {events['meta']['total_count']} events")
+    for ev in events['data']:
+        print(f"   - {ev['feature_key']}: qty={ev['quantity']} customer={ev['customer_key']}")
+except Exception as e:
+    print(f"   ✗ {e}")
+
+# Test 8: List wallets
+print(f"\n8. List wallets for {customer_key}:")
+try:
+    wallets = client.wallets.list(customer_key)
+    if wallets['data']:
+        for w in wallets['data']:
+            print(f"   - {w['name']}: balance={w['balance']} {w.get('credit_unit_plural', '')}")
+    else:
+        print("   (no wallets)")
+except Exception as e:
+    print(f"   ✗ {e}")
+
+# Test 9: Card collection URL
+print("\n9. Card collection URL:")
+try:
+    url = client.checkout.card_collection_url(subscription_id="234ad06e-349c-45c9-bef5-0e3647c8b9bd")
+    print(f"   URL: {url}")
+except Exception as e:
+    print(f"   ✗ {e}")
+
+# Test 10: Archive customer
+print(f"\n10. Archive customer {customer_key}:")
+try:
+    archived = client.customers.archive(customer_key)
+    print(f"    archived_at: {archived['data']['archived_at']}")
+except Exception as e:
+    print(f"   ✗ {e}")
+
+# Test 11: Unarchive customer
+print(f"\n11. Unarchive customer {customer_key}:")
+try:
+    unarchived = client.customers.unarchive(customer_key)
+    print(f"    archived_at: {unarchived['data']['archived_at']}")
+except Exception as e:
+    print(f"   ✗ {e}")
+
+# Test 12: Delete test customer (cleanup)
+print(f"\n12. Cleanup - delete {customer_key}:")
 client.customers.delete(customer_key)
-print("   Deleted!")
+print("    Deleted!")
 
 print("\n" + "="*60)
 print("✓ ALL TESTS PASSED!")
