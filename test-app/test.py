@@ -102,6 +102,24 @@ try:
 except Exception as e:
     print(f"   ✗ {e}")
 
+# Test 7b: Compute quantity price (requires finance API feature on plan)
+print("\n7b. Compute quantity price for premium_feature:")
+try:
+    price = client.usages.quantity_price(
+        customer_key=customer_key,
+        feature_key="premium_feature",
+        quantity=10,
+    )
+    data = price["data"]
+    print(f"   Price: {data['price']} {data['unit']} for {data['quantity']} units")
+    for tier in data.get("applied_tiers", []) or []:
+        print(
+            f"     tier {tier['first_unit']}-{tier['last_unit']}: "
+            f"{tier['units_consumed']} units -> {tier['tier_price']}"
+        )
+except Exception as e:
+    print(f"   ✗ {e}")
+
 # Test 8: List wallets
 print(f"\n8. List wallets for {customer_key}:")
 try:
