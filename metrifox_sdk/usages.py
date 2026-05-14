@@ -113,3 +113,43 @@ class UsagesModule:
         if per_page is not None:
             params["per_page"] = per_page
         return self._meter_client.get("usage/events", params=params)
+
+    def quantity_price(
+        self,
+        customer_key: str,
+        feature_key: str,
+        quantity: int,
+    ) -> Dict[str, Any]:
+        """
+        Compute the price of a usage quantity for a feature
+
+        Returns the price for a given quantity of a feature for a customer based
+        on their plan. Useful for displaying upgrade/upsell costs before a customer
+        commits, or for back-of-house cost estimation.
+
+        Only available to tenants whose plan includes the finance API feature.
+
+        Args:
+            customer_key: The customer's unique key
+            feature_key: The feature's unique key
+            quantity: The quantity to price
+
+        Returns:
+            API response with computed price, unit, and per-tier breakdown
+
+        Example:
+            >>> price = client.usages.quantity_price(
+            ...     customer_key="cust_123",
+            ...     feature_key="feature_interview_booking",
+            ...     quantity=500,
+            ... )
+            >>> print(f"{price['data']['price']} {price['data']['unit']}")
+            >>> for tier in price['data'].get('applied_tiers', []):
+            ...     print(f"  {tier['units_consumed']} units @ tier {tier['first_unit']}-{tier['last_unit']}")
+        """
+        params = {
+            "customer_key": customer_key,
+            "feature_key": feature_key,
+            "quantity": quantity,
+        }
+        return self._client.get("usage/quantity-price", params=params)

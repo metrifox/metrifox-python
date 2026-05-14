@@ -108,6 +108,29 @@ for event in events['data']:
 print(f"Page {events['meta']['current_page']} of {events['meta']['total_pages']}")
 ```
 
+### Compute Quantity Price
+
+Compute the price of a given quantity of a feature for a customer based on their plan. Useful for previewing upgrade costs or showing customers the cost of additional usage before they commit.
+
+```python
+price = client.usages.quantity_price(
+    customer_key="customer_123",
+    feature_key="feature_interview_booking",
+    quantity=500
+)
+
+print(f"{price['data']['price']} {price['data']['unit']}")
+
+# For tiered pricing, inspect the per-tier breakdown
+for tier in price['data'].get('applied_tiers', []):
+    print(
+        f"  Tier {tier['first_unit']}-{tier['last_unit']}: "
+        f"{tier['units_consumed']} units -> {tier['tier_price']}"
+    )
+```
+
+> Only available to tenants whose plan includes the finance API feature.
+
 ### Complete Usage Example
 
 Here's a complete example showing the typical access control + usage recording pattern:
@@ -549,6 +572,7 @@ print(customer['customer_key'])  # IDE knows this field exists
 - `check_access(request)` - Check feature access
 - `record_usage(request)` - Record a usage event
 - `list_events(customer_key, feature_key, page, per_page)` - List usage events
+- `quantity_price(customer_key, feature_key, quantity)` - Compute the price for a given usage quantity
 
 **Subscriptions Module (`client.subscriptions`):**
 - `get_billing_history(subscription_id)` - Get billing history for a subscription
