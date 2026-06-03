@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.1] - 2026-06-03
 
+This release fixes field names on the typed request dataclasses. Calls made
+with plain dicts (e.g. `{"quantity": ...}`) were unaffected and continue to
+work as before.
+
 ### Fixed
-- `AccessCheckRequest` now sends `quantity` (the field the API expects) instead
-  of `requested_quantity`, which was silently ignored — access checks defaulted
-  to a quantity of 1 regardless of the value passed.
-- `UsageEventRequest` now uses `quantity` as its canonical field name.
+- `AccessCheckRequest` now exposes a `quantity` field. Previously it only had
+  `requested_quantity`, which the API does not recognize — so access checks
+  built from `AccessCheckRequest` were sent without a quantity and defaulted to
+  1, regardless of the value passed. Dict-based callers passing `quantity` were
+  not affected.
+- `UsageEventRequest` now uses `quantity` as its canonical field name (it
+  previously exposed `amount`).
 - Removed `customer_type` from `CustomerUpdateRequest` (it is not an updatable
   field and was silently ignored on update).
 
