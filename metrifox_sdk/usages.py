@@ -34,7 +34,13 @@ class UsagesModule:
             ... else:
             ...     print("Access denied")
         """
-        params = request.to_dict() if hasattr(request, 'to_dict') else request
+        params = request.to_dict() if hasattr(request, 'to_dict') else dict(request)
+
+        # Back-compat: the API expects `quantity`; honor the old
+        # `requested_quantity` name if a caller still passes it as a dict.
+        if 'requested_quantity' in params and 'quantity' not in params:
+            params['quantity'] = params.pop('requested_quantity')
+
         return self._meter_client.get("usage/access", params=params)
 
     def record_usage(self, request: Union[UsageEventRequest, Dict[str, Any]]) -> Dict[str, Any]:
@@ -53,7 +59,7 @@ class UsagesModule:
             ...     "customer_key": "cust_123",
             ...     "event_name": "api_call",
             ...     "event_id": "evt_unique_123",
-            ...     "amount": 1
+            ...     "quantity": 1
             ... })
             >>>
             >>> # Advanced usage with metadata
@@ -61,7 +67,7 @@ class UsagesModule:
             ...     "customer_key": "cust_123",
             ...     "feature_key": "premium_feature",
             ...     "event_id": "evt_unique_456",
-            ...     "amount": 5,
+            ...     "quantity": 5,
             ...     "credit_used": 25,
             ...     "timestamp": int(time.time() * 1000),
             ...     "metadata": {
@@ -70,9 +76,10 @@ class UsagesModule:
             ...     }
             ... })
         """
-        data = request.to_dict() if hasattr(request, 'to_dict') else request
+        data = request.to_dict() if hasattr(request, 'to_dict') else dict(request)
 
-        # Ensure 'quantity' is used instead of 'amount' for API compatibility
+        # Back-compat: the API expects `quantity`; honor the old
+        # `amount` name if a caller still passes it as a dict.
         if 'amount' in data and 'quantity' not in data:
             data['quantity'] = data.pop('amount')
 

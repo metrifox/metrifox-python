@@ -42,10 +42,11 @@ client = init({"api_key": "your_api_key"})
 Check if a customer has access to a specific feature before allowing them to use it:
 
 ```python
-# Check access
+# Check access (quantity defaults to 1)
 access = client.usages.check_access({
     "feature_key": "premium_feature",
-    "customer_key": "customer_123"
+    "customer_key": "customer_123",
+    "quantity": 1  # how many units to check access for
 })
 
 if access['data']['can_access']:
@@ -61,7 +62,7 @@ Record when customers use features to track consumption against their quotas:
 ```python
 import time
 
-# Simple usage recording (amount defaults to 1)
+# Simple usage recording (quantity defaults to 1)
 response = client.usages.record_usage({
     "customer_key": "customer_123",
     "event_name": "api_call",
@@ -73,7 +74,7 @@ response = client.usages.record_usage({
     "customer_key": "customer_123",
     "feature_key": "premium_feature",
     "event_id": "evt_unique_456",
-    "amount": 5,
+    "quantity": 5,
     "credit_used": 25,
     "timestamp": int(time.time() * 1000),  # milliseconds
     "metadata": {
@@ -130,7 +131,7 @@ def use_feature(customer_key, feature_key, event_name):
                 "customer_key": customer_key,
                 "event_name": event_name,
                 "event_id": f"evt_{result['transaction_id']}",
-                "amount": result.get('units_used', 1),
+                "quantity": result.get('units_used', 1),
                 "metadata": {
                     "execution_time_ms": result.get('duration')
                 }
