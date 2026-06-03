@@ -73,7 +73,7 @@ response = client.usages.record_usage({
     "customer_key": "user_001",
     "event_name": "api_call",
     "event_id": f"evt_{int(time.time())}",
-    "amount": 1
+    "quantity": 1
 })
 
 print(f"Usage recorded: {response['message']}")
@@ -120,7 +120,7 @@ if access['data']['can_access']:
         "customer_key": "demo_user_001",
         "event_name": "feature_used",
         "event_id": f"evt_{int(time.time())}",
-        "amount": 1
+        "quantity": 1
     })
     print("Feature used successfully!")
 else:

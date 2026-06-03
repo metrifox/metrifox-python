@@ -51,7 +51,6 @@ class CustomerUpdateRequest:
     timezone: Optional[str] = None
     language: Optional[str] = None
     currency: Optional[str] = None
-    customer_type: Optional[CustomerType] = None
     account_manager: Optional[str] = None
     tax_identification_number: Optional[str] = None
 
@@ -86,7 +85,8 @@ class UsageEventRequest:
     event_id: str
     event_name: Optional[str] = None
     feature_key: Optional[str] = None
-    amount: int = 1
+    quantity: int = 1
+    amount: Optional[int] = None  # deprecated alias for `quantity`
     credit_used: Optional[int] = None
     timestamp: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
@@ -94,9 +94,11 @@ class UsageEventRequest:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, removing None values"""
         data = asdict(self)
-        # Rename 'amount' to 'quantity' as per API requirement
-        if "amount" in data:
-            data["quantity"] = data.pop("amount")
+        # Back-compat: the API expects `quantity`; honor the old
+        # `amount` name if a caller still passes it.
+        legacy = data.pop("amount", None)
+        if legacy is not None:
+            data["quantity"] = legacy
         return {k: v for k, v in data.items() if v is not None}
 
 
@@ -106,11 +108,18 @@ class AccessCheckRequest:
 
     feature_key: str
     customer_key: str
-    requested_quantity: int = 1
+    quantity: int = 1
+    requested_quantity: Optional[int] = None  # deprecated alias for `quantity`
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
-        return asdict(self)
+        data = asdict(self)
+        # Back-compat: the API expects `quantity`; honor the old
+        # `requested_quantity` name if a caller still passes it.
+        legacy = data.pop("requested_quantity", None)
+        if legacy is not None:
+            data["quantity"] = legacy
+        return data
 
 
 # ─── Checkout Request Types ─────────────────────────────────────────────────────

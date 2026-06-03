@@ -89,7 +89,7 @@ def usage_tracking_example(client):
             "customer_key": customer_key,
             "event_name": "premium_feature_used",
             "event_id": f"evt_{int(time.time())}",
-            "amount": 1,
+            "quantity": 1,
             "metadata": {
                 "source": "example_script",
                 "action": "demo"
@@ -167,7 +167,7 @@ def type_safe_example(client):
         customer_key="cust_typed_001",
         event_name="api_call",
         event_id=f"evt_{int(time.time())}",
-        amount=5,
+        quantity=5,
         metadata={"endpoint": "/api/data"}
     )
 
