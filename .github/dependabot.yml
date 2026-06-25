@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Keeps the SHA-pinned actions in security.yml current. Dependabot bumps the
+  # pinned commit SHA AND the `# vX.Y.Z` comment together in a reviewable PR, so
+  # we stay immutably pinned without tracking releases by hand.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Surfaces security/version updates for the SDK's Python dependencies.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python-deps:
+        patterns:
+          - "*"
