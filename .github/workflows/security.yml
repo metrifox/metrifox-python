@@ -46,29 +46,10 @@ jobs:
       - name: Install pip-audit
         run: pip install pip-audit==2.10.1
 
+      # Logic lives in a script file so the Actions log stays clean — only this
+      # one line is echoed, not the whole loop.
       - name: Audit every requirements file (block shipped, report-only test/dev)
-        shell: bash
-        run: |
-          set -uo pipefail
-          shipped_failed=0
-          while IFS= read -r req; do
-            # Classify: test/dev/example/blind-spot path or filename => report-only.
-            case "$req" in
-              *demo*|*example*|*e2e*|*fixture*|*sample*|*test*|*spec*|*dev*) mode=report-only ;;
-              *) mode=blocking ;;
-            esac
-            echo "::group::pip-audit ($mode): $req"
-            if pip-audit -r "$req"; then
-              echo "clean: $req"
-            elif [ "$mode" = blocking ]; then
-              echo "::error::known advisory in shipped path: $req"
-              shipped_failed=1
-            else
-              echo "::warning::known advisory in report-only path: $req (not blocking)"
-            fi
-            echo "::endgroup::"
-          done < <(find . -name 'requirements*.txt' -not -path '*/.git/*' | sort)
-          exit $shipped_failed
+        run: bash .github/scripts/pip-audit.sh
 
   # Static analysis (SAST) for the SDK source — catches injection/insecure
   # patterns in our own code, complementing the dependency checks above.
