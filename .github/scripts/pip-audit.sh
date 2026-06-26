@@ -22,10 +22,14 @@ while IFS= read -r req; do
     continue
   fi
   if [ "$mode" = blocking ]; then badge='🔴 blocking'; shipped_failed=1; else badge='🟡 report-only'; fi
+  # Findings table -> PR check Summary page.
   {
     printf '\n### `%s` — %s\n\n' "$req" "$badge"
     printf '%s\n' "$md"
   } >> "$GITHUB_STEP_SUMMARY"
+  # Same findings -> step log (so they're visible inline, not only the Summary).
+  printf -- '── %s — %s findings ──\n' "$req" "$mode"
+  printf '%s\n' "$md"
   if [ "$mode" = blocking ]; then
     printf '::error::vulnerable dependency in shipped requirements: %s\n' "$req"
   else
