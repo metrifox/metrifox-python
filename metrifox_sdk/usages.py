@@ -62,7 +62,7 @@ class UsagesModule:
             ...     "quantity": 1
             ... })
             >>>
-            >>> # Advanced usage with metadata
+            >>> # Advanced usage with metadata and aggregation properties
             >>> response = client.usages.record_usage({
             ...     "customer_key": "cust_123",
             ...     "feature_key": "premium_feature",
@@ -73,6 +73,10 @@ class UsagesModule:
             ...     "metadata": {
             ...         "source": "web_app",
             ...         "session_id": "sess_xyz"
+            ...     },
+            ...     "properties": {
+            ...         "workspace_id": "workspace_42",
+            ...         "user_id": "user_7"
             ...     }
             ... })
         """

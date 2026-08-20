@@ -86,6 +86,24 @@ response = client.usages.record_usage({
 print(response['message'])  # "Event received"
 ```
 
+For a `count_unique` feature, send a `properties` mapping containing every
+field configured in the feature's `aggregation_properties`:
+
+```python
+response = client.usages.record_usage({
+    "customer_key": "customer_123",
+    "feature_key": "feature_active_users",
+    "event_id": "evt_active_user_123",
+    "metadata": {
+        "source": "web_app"
+    },
+    "properties": {
+        "workspace_id": "workspace_42",
+        "user_id": "user_7"
+    }
+})
+```
+
 ### Listing Usage Events
 
 Retrieve usage events with optional filters and pagination:
