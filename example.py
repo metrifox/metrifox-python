@@ -168,7 +168,8 @@ def type_safe_example(client):
         event_name="api_call",
         event_id=f"evt_{int(time.time())}",
         quantity=5,
-        metadata={"endpoint": "/api/data"}
+        metadata={"endpoint": "/api/data"},
+        properties={"workspace_id": "workspace_42", "user_id": "user_7"}
     )
 
     response = client.usages.record_usage(usage_request)

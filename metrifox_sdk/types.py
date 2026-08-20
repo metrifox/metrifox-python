@@ -90,6 +90,7 @@ class UsageEventRequest:
     credit_used: Optional[int] = None
     timestamp: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
+    properties: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, removing None values"""
